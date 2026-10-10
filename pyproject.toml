@@ -1,0 +1,20 @@
+[project]
+name = "hackersghost-ai"
+version = "0.1.4"
+description = "HackersGhost AI desktop prototype for Parrot OS, Kali Linux and Debian."
+readme = "README.md"
+requires-python = ">=3.10"
+dependencies = [
+    "PySide6>=6.6",
+    "cryptography>=46",
+]
+
+[project.scripts]
+hackersghost-ai-gui = "hackersghost_ai.gui.app:main"
+
+[build-system]
+requires = ["setuptools>=68"]
+build-backend = "setuptools.build_meta"
+
+[tool.setuptools.packages.find]
+include = ["hackersghost_ai*"]
