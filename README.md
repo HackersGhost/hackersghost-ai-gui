@@ -1,6 +1,6 @@
 # HackersGhost AI GUI
 
-Version 0.1.4 is an English-language desktop preview for Parrot OS, Kali Linux
+Version 0.1.5 is an English-language desktop preview for Parrot OS, Kali Linux
 and Debian, built with Python and PySide6. This download contains the application
 source and a Linux launch script, rather than a standalone executable.
 
@@ -8,6 +8,13 @@ OpenAI mode sends questions and the current session history to the OpenAI
 Responses API. It requires your own API key and model access; API usage is billed
 separately from ChatGPT. Offline demo mode works without a key or API requests.
 The application does not execute shell commands or browse the web.
+
+HackersGhost AI is intentionally specialized in ethical hacking, cybersecurity,
+Linux security and authorized security labs. It is not a general-purpose chatbot.
+Off-topic requests receive the fixed HackersGhost AI scope refusal instead of a
+general answer. Adjacent subjects such as Linux, Bash, Python, Git, DNS, HTTP,
+servers, virtualization, containers, cloud systems and networking are in scope
+only when directly relevant to security, hardening, privacy, forensics or a lab.
 
 ## Included
 
@@ -20,6 +27,7 @@ The application does not execute shell commands or browse the web.
 - Text-file attachments with an editable preview and explicit send confirmation.
 - Manual GUI update checks and signature-verified ZIP downloads.
 - Optional Linux application-menu and desktop shortcuts.
+- The same HackersGhost cybersecurity specialist policy used by the CLI.
 
 ## Install and run
 
@@ -27,9 +35,9 @@ Requirements: a Linux desktop session, Python 3.10 or later, and an internet
 connection for the initial dependency download. Run the application as your
 regular user.
 
-1. Transfer `HackersGhost-AI-0.1.4.zip` to your Parrot OS or Kali Linux computer.
+1. Transfer `HackersGhost-AI-0.1.5.zip` to your Parrot OS or Kali Linux computer.
 2. Extract it with your file manager, for example into your `Projects` folder.
-3. Open a terminal inside the extracted `HackersGhost-AI-0.1.4` folder. It contains
+3. Open a terminal inside the extracted `HackersGhost-AI-0.1.5` folder. It contains
    this README and the `scripts` folder.
 4. Install the system dependencies once:
 
@@ -84,7 +92,7 @@ Leave **Session API key** blank to reuse your existing credentials. Key selectio
 
 1. An explicitly entered session key, when provided.
 2. The `OPENAI_API_KEY` environment variable.
-3. The same Linux Secret Service keyring entry used by CLI 0.2.5.
+3. The same Linux Secret Service keyring entry used by CLI 0.2.6.
 
 For keyring access, install `libsecret-tools` and use a desktop session with an
 available, unlocked Secret Service keyring. To save a key using your existing CLI:
@@ -149,9 +157,8 @@ point your shortcuts to the new version. The updater does not execute downloaded
 the running app, change dependencies, or modify the CLI installation. A failed
 download leaves any existing destination file intact.
 
-The GUI feed for 0.1.3 was published and verified on October 9, 2026. A new
-release becomes available through the GUI only after the publisher uploads its
-package and matching signed manifest. An unavailable channel is reported as
+A new release becomes available through the GUI only after the publisher uploads
+its package and matching signed manifest. An unavailable channel is reported as
 unavailable, never as proof that the installed release is current.
 
 ## Privacy and scope
@@ -164,8 +171,15 @@ make API calls. Manual update checks can still contact the publisher in offline
 demo mode. There is no automatic command execution, telemetry or automatic
 installer in this GUI release.
 
-The transport and keyring lookup are adapted from the published HackersGhost AI
-CLI 0.2.5. The GUI does not launch the CLI as a subprocess or modify its runtime.
+The GUI sends the shared HackersGhost specialist policy with each OpenAI request.
+That policy limits normal answers to cybersecurity, ethical hacking, defensive
+security, incident response, malware analysis, vulnerability research, web and
+network security, privacy, OPSEC, authentication, credentials, security tooling,
+security labs and security-focused troubleshooting. Off-topic requests must use
+the fixed scope refusal.
+
+The transport and keyring lookup are adapted from HackersGhost AI CLI 0.2.6. The
+GUI does not launch the CLI as a subprocess or modify its runtime.
 
 ## Subsequent launches
 
@@ -206,8 +220,8 @@ https://hackersghost.com/downloads/hackersghost-ai-gui/latest.json
 https://hackersghost.com/downloads/hackersghost-ai-gui/HackersGhost-AI-VERSION.zip
 ```
 
-The trusted public key is the existing publisher Ed25519 key from the official
-CLI 0.2.5 installer. No private key is included or generated here. The payload must
+The trusted public key is the existing publisher Ed25519 key used by the official
+CLI updater. No private key is included or generated here. The payload must
 identify `product: hackersghost-ai-gui` and `schema: 1`; a signed CLI manifest is
 not accepted. The manifest is an envelope with base64 `payload` and `signature`.
 The signed JSON payload contains `schema`, `product`, `version`, `url`, `sha256`
@@ -217,8 +231,8 @@ On the publisher's trusted machine, with the existing private key kept outside
 this project, sign the release using the supplied helper:
 
 ```bash
-python scripts/sign_gui_release.py /path/to/HackersGhost-AI-0.1.4.zip \
-  --version 0.1.4 --private-key /path/to/existing-offline-signing-key \
+python scripts/sign_gui_release.py /path/to/HackersGhost-AI-0.1.5.zip \
+  --version 0.1.5 --private-key /path/to/existing-offline-signing-key \
   --output /path/to/new/latest.json
 ```
 
@@ -245,6 +259,7 @@ reuse and retries. Update tests cover signature verification, expiry, product/UR
 restrictions, archive safety, checksum failures and atomic saving. Launcher tests
 cover quoted paths, localized desktop folders, explicit replacement consent,
 unrelated-file protection, repeat installation and partial-failure recovery.
+Policy tests verify the strict security domain and fixed off-topic refusal.
 No real keys, website changes or paid API requests are needed. Tests render Qt
 offscreen and use temporary folders instead of your real desktop.
 
@@ -254,8 +269,15 @@ reuse and contextual follow-ups in GUI 0.1.2 on Kali. File analysis and a live
 update check with no newer release were checked in 0.1.3. The public 0.1.3
 manifest signature and downloaded package hash were also verified. The 0.1.4
 desktop launcher still needs hands-on verification on Kali or Parrot; automated
-Windows checks are not a substitute for Linux desktop integration. Downloading
-a genuinely newer release through the GUI also remains a separate live test.
+Windows checks are not a substitute for Linux desktop integration. Updating an
+installed 0.1.4 copy to 0.1.5 is the intended live update test for this release.
+
+## Changes in 0.1.5
+
+Aligned the GUI with the same strict HackersGhost cybersecurity specialist policy
+used by the CLI. General-purpose requests are now explicitly out of scope, while
+Linux and adjacent technical subjects remain available when they are relevant to
+security, hardening, privacy, forensics or authorized lab work.
 
 ## Changes in 0.1.4
 
