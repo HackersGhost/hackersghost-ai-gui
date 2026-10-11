@@ -72,6 +72,7 @@ class MemoryDialog(QDialog):
         self.erase_button.clicked.connect(self._erase)
         self.close_button.clicked.connect(self.accept)
         self.entry.returnPressed.connect(self._remember)
+        self.entry.textChanged.connect(self._sync_controls)
         self.items.itemSelectionChanged.connect(self._sync_controls)
 
         self._refresh()
