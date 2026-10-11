@@ -5,6 +5,7 @@ import urllib.error
 import urllib.request
 
 from hackersghost_ai.core.errors import ChatError
+from hackersghost_ai.core.memory import prompt_context
 from hackersghost_ai.core.policy import INSTRUCTIONS
 
 
@@ -18,9 +19,13 @@ class NoRedirect(urllib.request.HTTPRedirectHandler):
 
 class OpenAIBackend:
     def ask(self, key: str, model: str, history: list[dict[str, str]]) -> str:
+        try:
+            instructions = INSTRUCTIONS + prompt_context()
+        except ValueError as error:
+            raise ChatError(f"Local memory unavailable: {error}") from None
         body = json.dumps({
             "model": model,
-            "instructions": INSTRUCTIONS,
+            "instructions": instructions,
             "input": history,
             "store": False,
             "max_output_tokens": 2048,
