@@ -56,6 +56,12 @@ class LocalMemoryTests(unittest.TestCase):
             with self.assertRaisesRegex(ValueError, "encryption key is unavailable"):
                 memory.prompt_context()
 
+    def test_missing_memory_file_fails_closed_when_enabled(self):
+        memory.enable()
+        memory.MEMORY_FILE.unlink()
+        with self.assertRaisesRegex(ValueError, "encrypted memory file is missing"):
+            memory.prompt_context()
+
 
 if __name__ == "__main__":
     unittest.main()
