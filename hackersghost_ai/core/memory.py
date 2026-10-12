@@ -130,6 +130,8 @@ def _validate_items(items):
 
 def _load_items():
     if not MEMORY_FILE.exists():
+        if is_enabled():
+            raise ValueError("Local memory is enabled but its encrypted memory file is missing.")
         return []
     key = _require_key()
     try:
