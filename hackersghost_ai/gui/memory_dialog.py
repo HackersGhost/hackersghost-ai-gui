@@ -24,8 +24,9 @@ class MemoryDialog(QDialog):
         layout = QVBoxLayout(self)
         intro = QLabel(
             "HackersGhost AI local memory is optional, encrypted at rest and shared by the CLI and GUI "
-            "for this Linux user. When memory is on, saved items are added to OpenAI requests as context. "
-            "Do not store passwords, API keys, tokens, private keys or other secrets."
+            "for this Linux user. When memory is on and contains saved items, those items are included in "
+            "every OpenAI request; the model is instructed to use them only when relevant. Do not store "
+            "passwords, API keys, tokens, private keys or other secrets."
         )
         intro.setWordWrap(True)
         intro.setTextInteractionFlags(Qt.TextInteractionFlag.TextSelectableByMouse)
@@ -117,9 +118,9 @@ class MemoryDialog(QDialog):
         answer = QMessageBox.question(
             self,
             "Turn on local memory?",
-            "Saved items are encrypted locally, but when memory is on they are included in OpenAI requests "
-            "so the assistant can use them as context. Memory never stores items automatically in this version. "
-            "Turn local memory on?",
+            "Saved items are encrypted locally. When memory is on and contains saved items, those items are "
+            "included in every OpenAI request; the model is instructed to use them only when relevant. "
+            "Memory never stores items automatically in this version. Turn local memory on?",
             QMessageBox.StandardButton.Yes | QMessageBox.StandardButton.No,
             QMessageBox.StandardButton.No,
         )
