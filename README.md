@@ -1,6 +1,6 @@
 # HackersGhost AI GUI
 
-Version 0.1.5 is an English-language desktop preview for Parrot OS, Kali Linux
+Version 0.1.6 is an English-language desktop preview for Parrot OS, Kali Linux
 and Debian, built with Python and PySide6. This download contains the application
 source and a Linux launch script, rather than a standalone executable.
 
@@ -27,6 +27,7 @@ only when directly relevant to security, hardening, privacy, forensics or a lab.
 - Text-file attachments with an editable preview and explicit send confirmation.
 - Manual GUI update checks and signature-verified ZIP downloads.
 - Optional Linux application-menu and desktop shortcuts.
+- Optional encrypted local memory shared with HackersGhost AI CLI for the same Linux user.
 - The same HackersGhost cybersecurity specialist policy used by the CLI.
 
 ## Install and run
@@ -35,9 +36,9 @@ Requirements: a Linux desktop session, Python 3.10 or later, and an internet
 connection for the initial dependency download. Run the application as your
 regular user.
 
-1. Transfer `HackersGhost-AI-0.1.5.zip` to your Parrot OS or Kali Linux computer.
+1. Transfer `HackersGhost-AI-0.1.6.zip` to your Parrot OS or Kali Linux computer.
 2. Extract it with your file manager, for example into your `Projects` folder.
-3. Open a terminal inside the extracted `HackersGhost-AI-0.1.5` folder. It contains
+3. Open a terminal inside the extracted `HackersGhost-AI-0.1.6` folder. It contains
    this README and the `scripts` folder.
 4. Install the system dependencies once:
 
@@ -92,7 +93,7 @@ Leave **Session API key** blank to reuse your existing credentials. Key selectio
 
 1. An explicitly entered session key, when provided.
 2. The `OPENAI_API_KEY` environment variable.
-3. The same Linux Secret Service keyring entry used by CLI 0.2.6.
+3. The same Linux Secret Service keyring entry used by the CLI.
 
 For keyring access, install `libsecret-tools` and use a desktop session with an
 available, unlocked Secret Service keyring. To save a key using your existing CLI:
@@ -102,11 +103,11 @@ sudo apt install libsecret-tools
 "$HOME/.local/bin/hackersghost-ai" api-key save
 ```
 
-The GUI only reads that saved entry; it never replaces or deletes it. A session
-key is kept only in window memory and is cleared on exit. No keys are written to
-configuration files. Credential lookup happens when sending a message, so the
-desktop may ask you to unlock your keyring. A keyring lookup and an API request
-can each wait up to 60 seconds before timing out.
+The GUI only reads that saved API-key entry; it never replaces or deletes it. A
+session key is kept only in window memory and is cleared on exit. No API keys are
+written to configuration files. Credential lookup happens when sending a message,
+so the desktop may ask you to unlock your keyring. A keyring lookup and an API
+request can each wait up to 60 seconds before timing out.
 
 Send a question, then ask a follow-up in the same window. New chat clears the local
 conversation and unlocks the mode and model fields. Failed requests are shown in
@@ -116,6 +117,33 @@ The failed question is restored to the input field for an explicit retry.
 Closing the window during a request waits for that request to finish. Changing
 the model, starting another chat and duplicate submissions are disabled while
 waiting. Model and mode choices are kept only for the current window.
+
+## Encrypted local memory
+
+Local memory is optional, opt-in and user-controlled. Open **App > Manage local memory…**
+to enable or disable it, review saved items, remember a new item, forget one item,
+clear all items, or erase the memory file and its encryption key.
+
+Memory items are encrypted at rest with Fernet authenticated encryption. The
+memory key is stored in the Linux Secret Service keyring and the encrypted memory
+file is stored under the user's XDG data directory. HackersGhost AI CLI 0.2.7 and
+GUI 0.1.6 use the same storage format and keyring entry for the same Linux user,
+so memory can be shared between both clients.
+
+Memory never saves facts automatically in this version. When memory is enabled
+and contains saved items, those items are included in every OpenAI request made
+by HackersGhost AI. They are marked as untrusted user-provided context and the
+model is instructed to use them only when relevant, but the saved text is still
+transmitted to OpenAI as part of the request. Do not save passwords, API keys,
+private keys, access tokens or other secrets.
+
+Turning memory off stops sending saved memory to OpenAI but keeps the encrypted
+data locally. Clearing removes all saved items while leaving memory enabled.
+Erasing removes both the encrypted memory file and its key from the Linux keyring.
+The initial limits are 50 items, 512 bytes per item and 8 KiB total. If memory is
+enabled but its key is unavailable, does not match, or the encrypted memory file
+is unexpectedly missing, requests fail closed instead of silently continuing
+without the expected context.
 
 ## File analysis
 
@@ -164,8 +192,10 @@ unavailable, never as proof that the installed release is current.
 ## Privacy and scope
 
 OpenAI mode sends messages and session context to `https://api.openai.com/v1/responses`.
-The request uses `store: false`; this does not guarantee zero provider-side retention.
-See the [official Responses API guide](https://developers.openai.com/api/docs/guides/migrate-to-responses).
+When encrypted local memory is enabled and non-empty, the saved memory items are
+also included in every OpenAI request. The request uses `store: false`; this does
+not guarantee zero provider-side retention. See the
+[official Responses API guide](https://developers.openai.com/api/docs/guides/migrate-to-responses).
 Conversations are not saved to disk. Offline mode does not load credentials or
 make API calls. Manual update checks can still contact the publisher in offline
 demo mode. There is no automatic command execution, telemetry or automatic
@@ -178,8 +208,9 @@ network security, privacy, OPSEC, authentication, credentials, security tooling,
 security labs and security-focused troubleshooting. Off-topic requests must use
 the fixed scope refusal.
 
-The transport and keyring lookup are adapted from HackersGhost AI CLI 0.2.6. The
-GUI does not launch the CLI as a subprocess or modify its runtime.
+The transport, keyring lookup and shared local-memory format are aligned with
+HackersGhost AI CLI 0.2.7. The GUI does not launch the CLI as a subprocess or
+modify its runtime.
 
 ## Subsequent launches
 
@@ -231,8 +262,8 @@ On the publisher's trusted machine, with the existing private key kept outside
 this project, sign the release using the supplied helper:
 
 ```bash
-python scripts/sign_gui_release.py /path/to/HackersGhost-AI-0.1.5.zip \
-  --version 0.1.5 --private-key /path/to/existing-offline-signing-key \
+python scripts/sign_gui_release.py /path/to/HackersGhost-AI-0.1.6.zip \
+  --version 0.1.6 --private-key /path/to/existing-offline-signing-key \
   --output /path/to/new/latest.json
 ```
 
@@ -259,9 +290,10 @@ reuse and retries. Update tests cover signature verification, expiry, product/UR
 restrictions, archive safety, checksum failures and atomic saving. Launcher tests
 cover quoted paths, localized desktop folders, explicit replacement consent,
 unrelated-file protection, repeat installation and partial-failure recovery.
-Policy tests verify the strict security domain and fixed off-topic refusal.
-No real keys, website changes or paid API requests are needed. Tests render Qt
-offscreen and use temporary folders instead of your real desktop.
+Memory tests cover encrypted shared storage, prompt context, opt-out behavior and
+fail-closed handling. Policy tests verify the strict security domain and fixed
+off-topic refusal. No real keys, website changes or paid API requests are needed.
+Tests render Qt offscreen and use temporary folders instead of your real desktop.
 
 GUI 0.1.1 startup and offline message display were manually checked on Kali with
 Python 3.14.7. The owner also verified live OpenAI replies, existing Linux keyring
@@ -269,8 +301,24 @@ reuse and contextual follow-ups in GUI 0.1.2 on Kali. File analysis and a live
 update check with no newer release were checked in 0.1.3. The public 0.1.3
 manifest signature and downloaded package hash were also verified. The 0.1.4
 desktop launcher still needs hands-on verification on Kali or Parrot; automated
-Windows checks are not a substitute for Linux desktop integration. Updating an
-installed 0.1.4 copy to 0.1.5 is the intended live update test for this release.
+Windows checks are not a substitute for Linux desktop integration.
+
+GUI 0.1.6 local memory was manually verified on Parrot OS with the real Linux
+Secret Service keyring and a live OpenAI request. The GUI read memory created by
+CLI 0.2.7, used it in a live answer, and wrote a second item that the CLI read
+back. **App > Manage local memory…** was also visually checked with a single App
+menu. Kali memory verification is still planned before broadening platform-specific
+claims. Updating an installed 0.1.5 copy to 0.1.6 is the intended live update test
+once the signed 0.1.6 release is published.
+
+## Changes in 0.1.6
+
+Added optional encrypted local memory shared with CLI 0.2.7 for the same Linux
+user. Memory is explicit opt-in, never saves facts automatically, is encrypted at
+rest with its key in Linux Secret Service, and can be managed from
+**App > Manage local memory…**. Enabled saved items are transmitted to OpenAI as
+untrusted context on each request. Missing keys, mismatched keys and unexpectedly
+missing encrypted memory fail closed instead of silently dropping context.
 
 ## Changes in 0.1.5
 
