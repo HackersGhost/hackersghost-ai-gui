@@ -21,11 +21,13 @@ def build_window() -> MainWindow:
 
     app_menu = None
     for action in window.menuBar().actions():
-        if action.text().replace("&", "") == "App":
+        if action.text().replace("&", "") in ("App", "App Menu"):
             app_menu = action.menu()
             break
     if app_menu is None:
-        app_menu = window.menuBar().addMenu("App")
+        app_menu = window.menuBar().addMenu("App Menu")
+    else:
+        app_menu.menuAction().setText("App Menu")
     app_menu.addSeparator()
     memory_action = app_menu.addAction("Manage local memory…")
     memory_action.setToolTip("Review, add, remove or disable encrypted local memory.")
