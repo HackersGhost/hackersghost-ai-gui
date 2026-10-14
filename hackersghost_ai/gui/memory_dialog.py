@@ -90,6 +90,7 @@ class MemoryDialog(QDialog):
         self.close_button.clicked.connect(self.accept)
         self.entry.returnPressed.connect(self._remember)
         self.search_entry.returnPressed.connect(self._search)
+        self.search_entry.textChanged.connect(self._sync_controls)
         self.entry.textChanged.connect(self._sync_controls)
         self.items.itemSelectionChanged.connect(self._sync_controls)
 
