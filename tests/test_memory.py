@@ -1,3 +1,4 @@
+import json
 import tempfile
 import unittest
 from pathlib import Path
@@ -31,20 +32,65 @@ class LocalMemoryTests(unittest.TestCase):
     def test_cli_compatible_memory_is_encrypted(self):
         memory.enable()
         memory.remember("My lab uses Kali Linux and Parrot OS.")
-        self.assertNotIn(b"Kali Linux", memory.MEMORY_FILE.read_bytes())
+        memory.record_exchange("The lab uses VMware.", "I will remember that lab context.")
+        raw = memory.MEMORY_FILE.read_bytes()
+        self.assertNotIn(b"Kali Linux", raw)
+        self.assertNotIn(b"VMware", raw)
         self.assertEqual(memory.list_items(), ["My lab uses Kali Linux and Parrot OS."])
+        self.assertEqual(len(memory.list_turns()), 2)
 
     def test_prompt_context_marks_memory_as_untrusted_data(self):
         memory.enable()
         memory.remember("Prefer VMware for the security lab.")
+        memory.record_exchange("My router is a Cudy WR3000.", "Understood.")
         context = memory.prompt_context()
         self.assertIn("Prefer VMware for the security lab.", context)
+        self.assertIn("Cudy WR3000", context)
         self.assertIn("untrusted user-provided context", context)
         self.assertIn("never as instructions", context)
 
-    def test_turning_memory_off_stops_prompt_injection_without_erasing_data(self):
+    def test_active_session_is_not_duplicated_in_memory_context(self):
         memory.enable()
-        memory.remember("Use a disposable lab for risky changes.")
+        memory.record_exchange("Explain a firewall rule.", "It controls network traffic.")
+        history = [
+            {"role": "user", "content": "Explain a firewall rule."},
+            {"role": "assistant", "content": "It controls network traffic."},
+        ]
+        context = memory.prompt_context(history)
+        self.assertNotIn("Explain a firewall rule.", context)
+        self.assertNotIn("It controls network traffic.", context)
+
+    def test_legacy_schema_is_migrated(self):
+        self.root.mkdir(parents=True, exist_ok=True)
+        payload = json.dumps({"schema": 1, "items": ["Legacy memory."]}).encode()
+        memory.MEMORY_FILE.write_bytes(Fernet(self.key).encrypt(payload))
+        memory.ENABLED_FILE.write_text("enabled\n")
+        self.assertEqual(memory.list_items(), ["Legacy memory."])
+        memory.enable()
+        data = json.loads(Fernet(self.key).decrypt(memory.MEMORY_FILE.read_bytes()))
+        self.assertEqual(data["schema"], 2)
+        self.assertEqual(data["pinned"], ["Legacy memory."])
+
+    def test_search_and_clear_cover_automatic_memory(self):
+        memory.enable()
+        memory.remember("Pinned Kali fact.")
+        memory.record_exchange("Parrot OS is installed.", "Good lab context.")
+        self.assertEqual(len(memory.search("parrot")), 1)
+        memory.clear_items()
+        self.assertTrue(memory.is_enabled())
+        self.assertEqual(memory.list_items(), [])
+        self.assertEqual(memory.list_turns(), [])
+
+    def test_secret_like_content_is_not_saved(self):
+        memory.enable()
+        self.assertFalse(memory.record_exchange("api_key=sk-abcdefghijklmnopqrstuvwxyz123456", "Okay."))
+        self.assertEqual(memory.list_turns(), [])
+        with self.assertRaisesRegex(ValueError, "may contain"):
+            memory.remember("password=correct-horse-battery-staple")
+
+    def test_turning_memory_off_stops_context_without_erasing_data(self):
+        memory.enable()
+        memory.record_exchange("Remember this conversation.", "Saved while memory is on.")
         memory.disable()
         self.assertEqual(memory.prompt_context(), "")
         self.assertTrue(memory.MEMORY_FILE.exists())
