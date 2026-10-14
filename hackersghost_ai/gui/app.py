@@ -60,6 +60,9 @@ def _show_startup_update_notice_when_ready(window: MainWindow) -> None:
 
 def _schedule_automatic_update_check(window: MainWindow) -> None:
     """Check the signed GUI feed at startup at most once per 24 hours."""
+    if window.backend_input.currentData() == "offline":
+        return
+
     def run_check():
         try:
             if not window.update_service.automatic_check_due():
