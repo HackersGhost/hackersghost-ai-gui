@@ -112,10 +112,13 @@ class ConversationTests(unittest.TestCase):
         self.service = ChatService("openai", "test-model", self.backend, self.loader)
         self.record_patch = patch("hackersghost_ai.core.memory.record_exchange", return_value=True)
         self.enabled_patch = patch("hackersghost_ai.core.memory.is_enabled", return_value=True)
+        self.auto_enabled_patch = patch("hackersghost_ai.core.memory.is_auto_enabled", return_value=True)
         self.record = self.record_patch.start()
         self.enabled = self.enabled_patch.start()
+        self.auto_enabled = self.auto_enabled_patch.start()
         self.addCleanup(self.record_patch.stop)
         self.addCleanup(self.enabled_patch.stop)
+        self.addCleanup(self.auto_enabled_patch.stop)
 
     def test_followups_failed_turns_and_new_chat(self):
         self.service.send("First question")
@@ -136,6 +139,12 @@ class ConversationTests(unittest.TestCase):
         self.record.return_value = False
         self.service.send("A question with secret-like content")
         self.assertIn("not added to memory", self.service.memory_warning)
+
+    def test_memory_off_does_not_show_secret_warning(self):
+        self.record.return_value = False
+        self.auto_enabled.return_value = False
+        self.service.send("Ordinary question")
+        self.assertEqual(self.service.memory_warning, "")
 
     def test_memory_save_error_does_not_lose_successful_answer(self):
         self.record.side_effect = ValueError("keyring locked")
