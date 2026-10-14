@@ -20,14 +20,17 @@ class MemoryDialog(QDialog):
     def __init__(self, parent=None) -> None:
         super().__init__(parent)
         self.setWindowTitle("Memory")
-        self.resize(760, 560)
+        self.resize(780, 590)
 
         layout = QVBoxLayout(self)
         intro = QLabel(
-            "When Memory is on, successful OpenAI conversations are remembered automatically in encrypted "
-            "local storage shared by the CLI and GUI for this Linux user. File attachments are not automatically "
-            "remembered. Secret detection is best effort, so never use Memory to store passwords, API keys, "
-            "tokens or private keys. Remembered text is included as context in later OpenAI requests."
+            "Local Memory and automatic conversation memory are separate choices. Turning Local Memory on lets "
+            "pinned facts and previously saved conversation memory be used as context, but it does not start "
+            "saving new chats automatically. Automatic conversation memory requires its own explicit opt-in. "
+            "When enabled, successful OpenAI conversations without file attachments are stored in encrypted local "
+            "storage shared by the CLI and GUI for this Linux user. Secret detection is best effort, so never use "
+            "Memory to store passwords, API keys, tokens or private keys. Remembered text is included as context "
+            "in later OpenAI requests."
         )
         intro.setWordWrap(True)
         intro.setTextInteractionFlags(Qt.TextInteractionFlag.TextSelectableByMouse)
@@ -51,23 +54,31 @@ class MemoryDialog(QDialog):
         self.items.setSelectionMode(QListWidget.SelectionMode.SingleSelection)
         layout.addWidget(self.items, 1)
 
-        pin_label = QLabel("Optional: pin an important fact so it stays alongside the automatic conversation memory.")
+        memory_controls = QHBoxLayout()
+        self.enable_button = QPushButton("Local Memory ON")
+        self.disable_button = QPushButton("Local Memory OFF")
+        self.auto_enable_button = QPushButton("Auto Memory ON")
+        self.auto_disable_button = QPushButton("Auto Memory OFF")
+        memory_controls.addWidget(self.enable_button)
+        memory_controls.addWidget(self.disable_button)
+        memory_controls.addWidget(self.auto_enable_button)
+        memory_controls.addWidget(self.auto_disable_button)
+        layout.addLayout(memory_controls)
+
+        pin_label = QLabel("Optional: pin an important fact so it stays available independently of automatic conversation saving.")
         pin_label.setWordWrap(True)
         layout.addWidget(pin_label)
         self.entry = QLineEdit()
         self.entry.setPlaceholderText("Fact to pin")
         layout.addWidget(self.entry)
 
-        controls = QHBoxLayout()
-        self.enable_button = QPushButton("Memory ON")
-        self.disable_button = QPushButton("Memory OFF")
+        pin_controls = QHBoxLayout()
         self.add_button = QPushButton("Pin fact")
         self.remove_button = QPushButton("Forget selected pin")
-        controls.addWidget(self.enable_button)
-        controls.addWidget(self.disable_button)
-        controls.addWidget(self.add_button)
-        controls.addWidget(self.remove_button)
-        layout.addLayout(controls)
+        pin_controls.addWidget(self.add_button)
+        pin_controls.addWidget(self.remove_button)
+        pin_controls.addStretch(1)
+        layout.addLayout(pin_controls)
 
         danger_row = QHBoxLayout()
         self.clear_button = QPushButton("Clear all memory")
@@ -81,6 +92,8 @@ class MemoryDialog(QDialog):
 
         self.enable_button.clicked.connect(self._enable)
         self.disable_button.clicked.connect(self._disable)
+        self.auto_enable_button.clicked.connect(self._enable_auto)
+        self.auto_disable_button.clicked.connect(self._disable_auto)
         self.add_button.clicked.connect(self._remember)
         self.remove_button.clicked.connect(self._forget)
         self.search_button.clicked.connect(self._search)
@@ -109,7 +122,8 @@ class MemoryDialog(QDialog):
         self.items.clear()
         if not memory.is_enabled():
             self.state_label.setText(
-                "Memory is OFF. Existing encrypted memory stays on this device until you clear or erase it."
+                "Local Memory is OFF. Automatic conversation memory is OFF. Existing encrypted memory stays on "
+                "this device until you clear or erase it."
             )
             self._sync_controls()
             return
@@ -117,7 +131,7 @@ class MemoryDialog(QDialog):
             pinned = memory.list_items()
             turns = memory.list_turns()
         except (ValueError, OSError) as error:
-            self.state_label.setText(f"Memory is ON, but unavailable: {error}")
+            self.state_label.setText(f"Local Memory is ON, but unavailable: {error}")
             self._sync_controls()
             return
 
@@ -127,17 +141,26 @@ class MemoryDialog(QDialog):
             label = "You" if turn["role"] == "user" else "AI"
             self._add_item(f"{label}: {turn['text']}", turn["role"], number)
 
+        auto_on = memory.is_auto_enabled()
+        auto_text = (
+            "Automatic conversation memory is ON. New successful OpenAI conversations without file attachments "
+            "are remembered automatically."
+            if auto_on
+            else "Automatic conversation memory is OFF. New conversations are not being saved automatically."
+        )
         self.state_label.setText(
-            f"Memory is ON. {len(pinned)} pinned item{'s' if len(pinned) != 1 else ''} and "
-            f"{len(turns)} remembered conversation turn{'s' if len(turns) != 1 else ''}. "
-            "New successful OpenAI conversations are remembered automatically."
+            f"Local Memory is ON. {len(pinned)} pinned item{'s' if len(pinned) != 1 else ''} and "
+            f"{len(turns)} remembered conversation turn{'s' if len(turns) != 1 else ''}. {auto_text}"
         )
         self._sync_controls()
 
     def _sync_controls(self) -> None:
         enabled = memory.is_enabled()
+        auto_enabled = memory.is_auto_enabled()
         self.enable_button.setEnabled(not enabled)
         self.disable_button.setEnabled(enabled)
+        self.auto_enable_button.setEnabled(enabled and not auto_enabled)
+        self.auto_disable_button.setEnabled(enabled and auto_enabled)
         self.search_entry.setEnabled(enabled)
         self.search_button.setEnabled(enabled and bool(self.search_entry.text().strip()))
         self.show_all_button.setEnabled(enabled)
@@ -152,10 +175,9 @@ class MemoryDialog(QDialog):
     def _enable(self) -> None:
         answer = QMessageBox.question(
             self,
-            "Turn Memory on?",
-            "When Memory is on, successful OpenAI conversations are saved automatically in encrypted local "
-            "storage and used as context in later OpenAI requests. File attachments are not automatically saved. "
-            "Secret detection is best effort. Turn Memory on?",
+            "Turn Local Memory on?",
+            "Local Memory lets pinned facts and previously saved conversation memory be used as context in later "
+            "OpenAI requests. This does not enable automatic conversation saving. Turn Local Memory on?",
             QMessageBox.StandardButton.Yes | QMessageBox.StandardButton.No,
             QMessageBox.StandardButton.No,
         )
@@ -170,6 +192,29 @@ class MemoryDialog(QDialog):
 
     def _disable(self) -> None:
         memory.disable()
+        self._refresh()
+
+    def _enable_auto(self) -> None:
+        answer = QMessageBox.question(
+            self,
+            "Enable automatic conversation memory?",
+            "Successful OpenAI conversations without file attachments will be saved automatically in encrypted "
+            "local storage and included as context in later OpenAI requests. Secret detection is best effort, so "
+            "never use Memory for passwords, API keys, tokens or private keys. Enable automatic conversation memory?",
+            QMessageBox.StandardButton.Yes | QMessageBox.StandardButton.No,
+            QMessageBox.StandardButton.No,
+        )
+        if answer != QMessageBox.StandardButton.Yes:
+            return
+        try:
+            memory.enable_auto()
+        except (ValueError, OSError) as error:
+            self._error(error)
+            return
+        self._refresh()
+
+    def _disable_auto(self) -> None:
+        memory.disable_auto()
         self._refresh()
 
     def _remember(self) -> None:
@@ -219,8 +264,8 @@ class MemoryDialog(QDialog):
         answer = QMessageBox.warning(
             self,
             "Clear all memory?",
-            "Remove every pinned item and all automatically remembered conversations? Memory will remain ON, "
-            "but the removed memory cannot be recovered from HackersGhost AI.",
+            "Remove every pinned item and all remembered conversation turns? Local Memory will remain ON and the "
+            "automatic-memory setting will be unchanged, but removed memory cannot be recovered from HackersGhost AI.",
             QMessageBox.StandardButton.Yes | QMessageBox.StandardButton.No,
             QMessageBox.StandardButton.No,
         )
@@ -237,8 +282,9 @@ class MemoryDialog(QDialog):
         answer = QMessageBox.warning(
             self,
             "Erase Memory and key?",
-            "This turns Memory off and removes the encrypted memory file plus its encryption key from the Linux "
-            "keyring. Saved memory cannot be recovered from HackersGhost AI after this. Continue?",
+            "This turns Local Memory and automatic conversation memory off and removes the encrypted memory file "
+            "plus its encryption key from the Linux keyring. Saved memory cannot be recovered from HackersGhost AI "
+            "after this. Continue?",
             QMessageBox.StandardButton.Yes | QMessageBox.StandardButton.No,
             QMessageBox.StandardButton.No,
         )
