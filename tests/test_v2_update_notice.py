@@ -2,7 +2,10 @@ import unittest
 from types import SimpleNamespace
 from unittest.mock import patch
 
-from hackersghost_ai.gui.app import _show_startup_update_notice_when_ready
+from hackersghost_ai.gui.app import (
+    _schedule_automatic_update_check,
+    _show_startup_update_notice_when_ready,
+)
 
 
 class V2StartupUpdateNoticeTests(unittest.TestCase):
@@ -29,6 +32,14 @@ class V2StartupUpdateNoticeTests(unittest.TestCase):
                 with patch("hackersghost_ai.gui.app.QMessageBox.information") as notice:
                     _show_startup_update_notice_when_ready(window)
                 notice.assert_not_called()
+
+    def test_offline_mode_skips_automatic_startup_network_check(self):
+        window = SimpleNamespace(
+            backend_input=SimpleNamespace(currentData=lambda: "offline"),
+        )
+        with patch("hackersghost_ai.gui.app.QTimer.singleShot") as single_shot:
+            _schedule_automatic_update_check(window)
+        single_shot.assert_not_called()
 
 
 if __name__ == "__main__":
