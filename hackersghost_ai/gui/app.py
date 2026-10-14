@@ -1,7 +1,7 @@
 import sys
 
 from PySide6.QtCore import QTimer
-from PySide6.QtWidgets import QApplication
+from PySide6.QtWidgets import QApplication, QMessageBox
 
 from hackersghost_ai.core.app_info import AppInfo
 from hackersghost_ai.core.chat_service import ChatService
@@ -41,6 +41,23 @@ def build_window() -> MainWindow:
     return window
 
 
+def _show_startup_update_notice_when_ready(window: MainWindow) -> None:
+    """Show one clear notice after the background startup check finishes."""
+    if window._update_worker is not None:
+        QTimer.singleShot(100, lambda: _show_startup_update_notice_when_ready(window))
+        return
+    release = window._available_release
+    if release is None or not window.isVisible():
+        return
+    QMessageBox.information(
+        window,
+        "HackersGhost AI update available",
+        f"HackersGhost AI {release.version} is available.\n\n"
+        "Use Download in the Updates section to save the verified ZIP. "
+        "Installation remains manual; nothing is installed or executed automatically.",
+    )
+
+
 def _schedule_automatic_update_check(window: MainWindow) -> None:
     """Check the signed GUI feed at startup at most once per 24 hours."""
     def run_check():
@@ -52,6 +69,7 @@ def _schedule_automatic_update_check(window: MainWindow) -> None:
             # A state-file problem must not hide an available update.
             pass
         window._check_updates()
+        QTimer.singleShot(100, lambda: _show_startup_update_notice_when_ready(window))
 
     QTimer.singleShot(800, run_check)
 
