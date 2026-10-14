@@ -1,5 +1,6 @@
 import sys
 
+from PySide6.QtCore import QTimer
 from PySide6.QtWidgets import QApplication
 
 from hackersghost_ai.core.app_info import AppInfo
@@ -29,8 +30,8 @@ def build_window() -> MainWindow:
     else:
         app_menu.menuAction().setText("App Menu")
     app_menu.addSeparator()
-    memory_action = app_menu.addAction("Manage local memory…")
-    memory_action.setToolTip("Review, add, remove or disable encrypted local memory.")
+    memory_action = app_menu.addAction("Manage memory…")
+    memory_action.setToolTip("Review, search, clear or disable encrypted automatic memory.")
 
     def open_memory_dialog():
         MemoryDialog(window).exec()
@@ -38,6 +39,21 @@ def build_window() -> MainWindow:
     memory_action.triggered.connect(open_memory_dialog)
     window.memory_action = memory_action
     return window
+
+
+def _schedule_automatic_update_check(window: MainWindow) -> None:
+    """Check the signed GUI feed at startup at most once per 24 hours."""
+    def run_check():
+        try:
+            if not window.update_service.automatic_check_due():
+                return
+            window.update_service.mark_automatic_check()
+        except OSError:
+            # A state-file problem must not hide an available update.
+            pass
+        window._check_updates()
+
+    QTimer.singleShot(800, run_check)
 
 
 def main() -> int:
@@ -49,5 +65,6 @@ def main() -> int:
 
     window = build_window()
     window.show()
+    _schedule_automatic_update_check(window)
 
     return app.exec()
