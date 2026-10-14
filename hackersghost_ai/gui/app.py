@@ -1,6 +1,7 @@
 import sys
 
-from PySide6.QtWidgets import QApplication
+from PySide6.QtCore import QTimer
+from PySide6.QtWidgets import QApplication, QMessageBox
 
 from hackersghost_ai.core.app_info import AppInfo
 from hackersghost_ai.core.chat_service import ChatService
@@ -29,8 +30,8 @@ def build_window() -> MainWindow:
     else:
         app_menu.menuAction().setText("App Menu")
     app_menu.addSeparator()
-    memory_action = app_menu.addAction("Manage local memory…")
-    memory_action.setToolTip("Review, add, remove or disable encrypted local memory.")
+    memory_action = app_menu.addAction("Manage memory…")
+    memory_action.setToolTip("Review, search, clear or disable encrypted automatic memory.")
 
     def open_memory_dialog():
         MemoryDialog(window).exec()
@@ -38,6 +39,42 @@ def build_window() -> MainWindow:
     memory_action.triggered.connect(open_memory_dialog)
     window.memory_action = memory_action
     return window
+
+
+def _show_startup_update_notice_when_ready(window: MainWindow) -> None:
+    """Show one clear notice after the background startup check finishes."""
+    if window._update_worker is not None:
+        QTimer.singleShot(100, lambda: _show_startup_update_notice_when_ready(window))
+        return
+    release = window._available_release
+    if release is None or not window.isVisible():
+        return
+    QMessageBox.information(
+        window,
+        "HackersGhost AI update available",
+        f"HackersGhost AI {release.version} is available.\n\n"
+        "Use Download in the Updates section to save the verified ZIP. "
+        "Installation remains manual; nothing is installed or executed automatically.",
+    )
+
+
+def _schedule_automatic_update_check(window: MainWindow) -> None:
+    """Check the signed GUI feed at startup at most once per 24 hours."""
+    if window.backend_input.currentData() == "offline":
+        return
+
+    def run_check():
+        try:
+            if not window.update_service.automatic_check_due():
+                return
+            window.update_service.mark_automatic_check()
+        except OSError:
+            # A state-file problem must not hide an available update.
+            pass
+        window._check_updates()
+        QTimer.singleShot(100, lambda: _show_startup_update_notice_when_ready(window))
+
+    QTimer.singleShot(800, run_check)
 
 
 def main() -> int:
@@ -49,5 +86,6 @@ def main() -> int:
 
     window = build_window()
     window.show()
+    _schedule_automatic_update_check(window)
 
     return app.exec()

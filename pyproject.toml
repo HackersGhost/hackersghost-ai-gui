@@ -1,6 +1,6 @@
 [project]
 name = "hackersghost-ai"
-version = "0.1.6"
+version = "2.0.0"
 description = "HackersGhost AI desktop prototype for Parrot OS, Kali Linux and Debian."
 readme = "README.md"
 requires-python = ">=3.10"

@@ -1,3 +1,3 @@
-"""HackersGhost AI desktop prototype."""
+"""HackersGhost AI desktop application."""
 
-__version__ = "0.1.6"
+__version__ = "2.0.0"
