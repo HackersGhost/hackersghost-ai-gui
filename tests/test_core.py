@@ -53,9 +53,12 @@ class BackendTests(unittest.TestCase):
         response = io.BytesIO(json.dumps(self.payload()).encode())
         opener = Mock()
         opener.open.return_value = response
-        with patch("urllib.request.build_opener", return_value=opener):
-            result = OpenAIBackend().ask("fake-key", "test-model", [{"role": "user", "content": "Hello"}])
+        history = [{"role": "user", "content": "Hello"}]
+        with patch("hackersghost_ai.core.openai_backend.prompt_context", return_value="") as memory_context, \
+             patch("urllib.request.build_opener", return_value=opener):
+            result = OpenAIBackend().ask("fake-key", "test-model", history)
         self.assertEqual(result, "Example answer")
+        memory_context.assert_called_once_with(history)
         request = opener.open.call_args.args[0]
         body = json.loads(request.data)
         self.assertEqual(request.full_url, "https://api.openai.com/v1/responses")
@@ -73,7 +76,8 @@ class BackendTests(unittest.TestCase):
                 error = urllib.error.HTTPError("https://api.openai.com/v1/responses", code, "fake-key", {}, io.BytesIO(b"fake-key"))
                 opener = Mock()
                 opener.open.side_effect = error
-                with patch("urllib.request.build_opener", return_value=opener):
+                with patch("hackersghost_ai.core.openai_backend.prompt_context", return_value=""), \
+                     patch("urllib.request.build_opener", return_value=opener):
                     with self.assertRaises(ChatError) as caught:
                         OpenAIBackend().ask("fake-key", "model", [])
                 self.assertNotIn("fake-key", str(caught.exception))
@@ -95,7 +99,8 @@ class BackendTests(unittest.TestCase):
         for payload in (b"not json", b"x" * (RESPONSE_LIMIT + 1)):
             opener = Mock()
             opener.open.return_value = io.BytesIO(payload)
-            with patch("urllib.request.build_opener", return_value=opener), self.assertRaises(ChatError):
+            with patch("hackersghost_ai.core.openai_backend.prompt_context", return_value=""), \
+                 patch("urllib.request.build_opener", return_value=opener), self.assertRaises(ChatError):
                 OpenAIBackend().ask("fake-key", "model", [])
 
 
@@ -105,9 +110,16 @@ class ConversationTests(unittest.TestCase):
         self.backend.ask.return_value = "First answer"
         self.loader = Mock(return_value=Credential("fake-key", "test"))
         self.service = ChatService("openai", "test-model", self.backend, self.loader)
+        self.record_patch = patch("hackersghost_ai.core.memory.record_exchange", return_value=True)
+        self.enabled_patch = patch("hackersghost_ai.core.memory.is_enabled", return_value=True)
+        self.record = self.record_patch.start()
+        self.enabled = self.enabled_patch.start()
+        self.addCleanup(self.record_patch.stop)
+        self.addCleanup(self.enabled_patch.stop)
 
     def test_followups_failed_turns_and_new_chat(self):
         self.service.send("First question")
+        self.record.assert_called_with("First question", "First answer")
         self.backend.ask.side_effect = ChatError("Timed out")
         with self.assertRaises(ChatError):
             self.service.send("Failed question")
@@ -120,11 +132,23 @@ class ConversationTests(unittest.TestCase):
         self.service.send("Fresh question")
         self.assertEqual(self.backend.ask.call_args.args[2], [{"role": "user", "content": "Fresh question"}])
 
-    def test_offline_mode_never_looks_up_credentials_or_sends_requests(self):
+    def test_memory_skip_is_visible_as_warning(self):
+        self.record.return_value = False
+        self.service.send("A question with secret-like content")
+        self.assertIn("not added to memory", self.service.memory_warning)
+
+    def test_memory_save_error_does_not_lose_successful_answer(self):
+        self.record.side_effect = ValueError("keyring locked")
+        response = self.service.send("Question")
+        self.assertEqual(response.text, "First answer")
+        self.assertIn("keyring locked", self.service.memory_warning)
+
+    def test_offline_mode_never_looks_up_credentials_or_sends_requests_or_memory(self):
         self.service.backend_mode = "offline"
         self.assertIn("Offline demo", self.service.send("Hello").text)
         self.loader.assert_not_called()
         self.backend.ask.assert_not_called()
+        self.record.assert_not_called()
 
     def test_invalid_input_stops_before_credentials_and_network(self):
         for prompt in (" ", "x" * (MESSAGE_LIMIT + 1)):
