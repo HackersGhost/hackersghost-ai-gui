@@ -29,6 +29,9 @@ class LocalMemoryTests(unittest.TestCase):
             item.stop()
         self.temp.cleanup()
 
+    def decrypted(self):
+        return json.loads(Fernet(self.key).decrypt(memory.MEMORY_FILE.read_bytes()))
+
     def test_cli_compatible_memory_is_encrypted(self):
         memory.enable()
         memory.remember("My lab uses Kali Linux and Parrot OS.")
@@ -38,6 +41,9 @@ class LocalMemoryTests(unittest.TestCase):
         self.assertNotIn(b"VMware", raw)
         self.assertEqual(memory.list_items(), ["My lab uses Kali Linux and Parrot OS."])
         self.assertEqual(len(memory.list_turns()), 2)
+        data = self.decrypted()
+        self.assertEqual(data["schema"], 1)
+        self.assertEqual(data["items"], ["My lab uses Kali Linux and Parrot OS."])
 
     def test_prompt_context_marks_memory_as_untrusted_data(self):
         memory.enable()
@@ -60,16 +66,33 @@ class LocalMemoryTests(unittest.TestCase):
         self.assertNotIn("Explain a firewall rule.", context)
         self.assertNotIn("It controls network traffic.", context)
 
-    def test_legacy_schema_is_migrated(self):
+    def test_legacy_schema_remains_old_client_compatible_after_v2_write(self):
         self.root.mkdir(parents=True, exist_ok=True)
         payload = json.dumps({"schema": 1, "items": ["Legacy memory."]}).encode()
         memory.MEMORY_FILE.write_bytes(Fernet(self.key).encrypt(payload))
         memory.ENABLED_FILE.write_text("enabled\n")
         self.assertEqual(memory.list_items(), ["Legacy memory."])
+        memory.record_exchange("V2 GUI question.", "V2 GUI answer.")
+        data = self.decrypted()
+        self.assertEqual(data["schema"], 1)
+        self.assertEqual(data["items"], ["Legacy memory."])
+        self.assertEqual([turn["role"] for turn in data["turns"]], ["user", "assistant"])
+
+    def test_early_v2_schema_two_is_normalized_to_compatible_schema_one(self):
+        self.root.mkdir(parents=True, exist_ok=True)
+        payload = json.dumps({
+            "schema": 2,
+            "pinned": ["Early v2 memory."],
+            "turns": [{"role": "assistant", "text": "Early development turn.", "created": 2}],
+        }).encode()
+        memory.MEMORY_FILE.write_bytes(Fernet(self.key).encrypt(payload))
+        memory.ENABLED_FILE.write_text("enabled\n")
+        self.assertEqual(memory.list_items(), ["Early v2 memory."])
         memory.enable()
-        data = json.loads(Fernet(self.key).decrypt(memory.MEMORY_FILE.read_bytes()))
-        self.assertEqual(data["schema"], 2)
-        self.assertEqual(data["pinned"], ["Legacy memory."])
+        data = self.decrypted()
+        self.assertEqual(data["schema"], 1)
+        self.assertEqual(data["items"], ["Early v2 memory."])
+        self.assertEqual(data["turns"][0]["text"], "Early development turn.")
 
     def test_search_and_clear_cover_automatic_memory(self):
         memory.enable()
