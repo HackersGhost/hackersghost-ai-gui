@@ -7,7 +7,7 @@ from hackersghost_ai import __version__
 class AppInfo:
     name: str = "HackersGhost AI"
     version: str = __version__
-    channel: str = "preview"
+    channel: str = "stable"
 
     @property
     def display_version(self) -> str:
