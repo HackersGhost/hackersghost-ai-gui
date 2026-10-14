@@ -23,7 +23,7 @@ class V2ChatMemoryTests(unittest.TestCase):
     def test_successful_plain_exchange_is_remembered(self):
         service = self.service()
         with patch("hackersghost_ai.core.memory.record_exchange", return_value=True) as remember, \
-             patch("hackersghost_ai.core.memory.is_enabled", return_value=True):
+             patch("hackersghost_ai.core.memory.is_auto_enabled", return_value=True):
             response = service.send("Explain a firewall rule")
             self.assertEqual(response.text, "A firewall rule controls network traffic.")
             remember.assert_called_once_with(
