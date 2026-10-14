@@ -1,4 +1,4 @@
-"""Manual, signed GUI release downloads. Never installs or executes downloaded code."""
+"""Signed GUI release checks and downloads. Never installs or executes downloaded code."""
 
 import base64
 from dataclasses import dataclass, field
@@ -25,6 +25,9 @@ DOWNLOAD_BASE = "https://hackersghost.com/downloads/hackersghost-ai-gui/"
 FEED = DOWNLOAD_BASE + "latest.json"
 MANIFEST_LIMIT = 16 * 1024
 PACKAGE_LIMIT = 4 * 1024 * 1024
+AUTO_CHECK_INTERVAL = 24 * 60 * 60
+STATE_HOME = Path(os.environ.get("XDG_STATE_HOME", Path.home() / ".local" / "state"))
+AUTO_CHECK_FILE = STATE_HOME / "hackersghost-ai" / "gui-last-update-check"
 
 
 class UpdateError(Exception):
@@ -138,7 +141,33 @@ class UpdateService:
         self.public_key = public_key
 
     def get_status(self) -> UpdateStatus:
-        return UpdateStatus(self.current_version, None, "Not checked")
+        return UpdateStatus(self.current_version, None, "Automatic update check will run at startup")
+
+    def automatic_check_due(self, *, now: float | None = None) -> bool:
+        """Return whether the GUI should make its once-per-day startup check."""
+        now = time.time() if now is None else now
+        try:
+            age = now - AUTO_CHECK_FILE.stat().st_mtime
+        except FileNotFoundError:
+            return True
+        except OSError:
+            return True
+        return age >= AUTO_CHECK_INTERVAL or age < 0
+
+    def mark_automatic_check(self, *, now: float | None = None) -> None:
+        """Persist the startup-check attempt without storing user data."""
+        now = time.time() if now is None else now
+        parent = AUTO_CHECK_FILE.parent
+        parent.mkdir(parents=True, exist_ok=True, mode=0o700)
+        try:
+            parent.chmod(0o700)
+        except OSError:
+            pass
+        temporary = parent / (AUTO_CHECK_FILE.name + ".new")
+        temporary.write_text(str(int(now)), encoding="ascii")
+        temporary.chmod(0o600)
+        os.replace(temporary, AUTO_CHECK_FILE)
+        os.utime(AUTO_CHECK_FILE, (now, now))
 
     def _fetch(self, url: str, limit: int) -> bytes:
         try:
@@ -162,7 +191,7 @@ class UpdateService:
         available = version_tuple(release.version) > version_tuple(self.current_version)
         return UpdateStatus(
             self.current_version, release.version,
-            f"GUI {release.version} available" if available else "No newer GUI release available.",
+            f"HackersGhost AI {release.version} is available" if available else "No newer GUI release available.",
             release if available else None,
         )
 
