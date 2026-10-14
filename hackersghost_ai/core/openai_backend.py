@@ -20,7 +20,7 @@ class NoRedirect(urllib.request.HTTPRedirectHandler):
 class OpenAIBackend:
     def ask(self, key: str, model: str, history: list[dict[str, str]]) -> str:
         try:
-            instructions = INSTRUCTIONS + prompt_context()
+            instructions = INSTRUCTIONS + prompt_context(history)
         except ValueError as error:
             raise ChatError(f"Local memory unavailable: {error}") from None
         body = json.dumps({
