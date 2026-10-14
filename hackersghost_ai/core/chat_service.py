@@ -74,7 +74,7 @@ class ChatService:
                 try:
                     from hackersghost_ai.core import memory
                     saved = memory.record_exchange(memory_prompt, response)
-                    if memory.is_enabled() and not saved:
+                    if memory.is_auto_enabled() and not saved:
                         self.memory_warning = "This exchange was not added to memory because it looked like it might contain a secret."
                 except (ValueError, OSError, UnicodeError) as error:
                     self.memory_warning = f"Memory could not save this exchange: {error}"
