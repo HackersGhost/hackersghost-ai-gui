@@ -60,7 +60,7 @@ jobs:
           config = configparser.ConfigParser(interpolation=None)
           config.read(menu)
           entry = config["Desktop Entry"]
-          assert entry["X-HackersGhost-GUI-Launcher"] == "managed"
+          assert entry["X-HackersGhost-GUI-Launcher"] == "1"
           assert entry["X-HackersGhost-GUI-Version"] == "2.1.0"
           assert str(root / "releases/HackersGhost-AI-2.1.0") in entry["Exec"]
           assert not (Path.home() / ".local/bin/hackersghost-ai").exists()
