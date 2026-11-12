@@ -162,6 +162,7 @@ def install_archive(
         launcher: LauncherResult = install_launchers(
             desktop_dir=desktop_dir, replace_existing=True,
             project_dir=destination, python_executable=python,
+            target_version=release.version,
         )
     except (LauncherError, OSError):
         # The staged release is kept because a desktop shortcut may have been
