@@ -23,7 +23,7 @@ class UpdateButtonVisibilityTests(unittest.TestCase):
         )
         settings = SimpleNamespace(backend_mode="offline", model="offline")
         update_service = SimpleNamespace(get_status=lambda: SimpleNamespace(message="No newer release"))
-        window = MainWindow(info, settings, SimpleNamespace(), update_service)
+        window = MainWindow(info, settings, SimpleNamespace(clear=lambda: None), update_service)
         self.addCleanup(window.close)
         window.resize(760, 520)
         window.show()
