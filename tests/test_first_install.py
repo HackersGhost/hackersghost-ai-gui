@@ -122,7 +122,7 @@ class FirstInstallTests(unittest.TestCase):
         cli.parent.mkdir(parents=True)
         cli.write_text("existing CLI")
         python = self.home / "runtime/bin/python"
-        python.parent.mkdir()
+        python.parent.mkdir(parents=True)
         python.write_text("python executable")
         python.chmod(0o700)
         root = self.home / "managed-gui"
