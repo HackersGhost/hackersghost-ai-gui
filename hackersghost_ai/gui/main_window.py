@@ -31,7 +31,8 @@ from hackersghost_ai.core.chat_service import ChatMessage, ChatService
 from hackersghost_ai.core.desktop_launcher import LauncherError, LauncherReplacementRequired, install_launchers
 from hackersghost_ai.core.errors import ChatError
 from hackersghost_ai.core.settings import AppSettings
-from hackersghost_ai.core.update_service import UpdateService, UpdateStatus
+from hackersghost_ai.core.update_service import UpdateError, UpdateService, UpdateStatus
+from hackersghost_ai.core.update_installer import InstallResult, restore_previous
 from hackersghost_ai.gui.attachment_dialog import AttachmentDialog
 from hackersghost_ai.gui.chat_worker import ChatWorker
 from hackersghost_ai.gui.update_worker import UpdateWorker
@@ -92,7 +93,10 @@ class MainWindow(QMainWindow):
         self.download_update_button = QPushButton("Download")
         self.download_update_button.setAccessibleName("Download update")
         self.download_update_button.setIcon(self.style().standardIcon(QStyle.StandardPixmap.SP_DialogSaveButton))
-        self.download_update_button.setToolTip("Download a verified GUI ZIP. Installation is manual.")
+        self.download_update_button.setToolTip("Save the verified GUI ZIP for manual installation.")
+        self.install_update_button = QPushButton("Install")
+        self.install_update_button.setAccessibleName("Install verified GUI update")
+        self.install_update_button.setToolTip("Download, verify, and install the GUI update for this user.")
         self.attach_button = self._tool_button(QStyle.StandardPixmap.SP_DirOpenIcon, "Attach text file")
         self.review_attachment_button = self._tool_button(QStyle.StandardPixmap.SP_FileDialogDetailedView, "Review attachment")
         self.remove_attachment_button = self._tool_button(QStyle.StandardPixmap.SP_DialogCloseButton, "Remove attachment")
@@ -109,6 +113,9 @@ class MainWindow(QMainWindow):
         )
         self.install_launcher_action.setToolTip("Create Linux application-menu and desktop shortcuts for this GUI version.")
         self.install_launcher_action.triggered.connect(self._install_launcher)
+        self.restore_gui_action = app_menu.addAction("Restore previous GUI launcher")
+        self.restore_gui_action.setToolTip("Point the desktop shortcuts to the previous GUI folder.")
+        self.restore_gui_action.triggered.connect(self._restore_previous_gui)
         self._connect_signals()
         self._sync_controls()
         self._show_welcome_message()
@@ -180,6 +187,7 @@ class MainWindow(QMainWindow):
         update_actions = QHBoxLayout()
         update_actions.addWidget(self.check_update_button)
         update_actions.addWidget(self.download_update_button)
+        update_actions.addWidget(self.install_update_button)
         layout.addLayout(update_actions)
         layout.addStretch(1)
 
@@ -256,6 +264,7 @@ class MainWindow(QMainWindow):
         self.remove_attachment_button.clicked.connect(self._remove_attachment)
         self.check_update_button.clicked.connect(self._check_updates)
         self.download_update_button.clicked.connect(self._download_update)
+        self.install_update_button.clicked.connect(self._install_update)
 
     def _show_welcome_message(self) -> None:
         self._append_message(
@@ -285,7 +294,9 @@ class MainWindow(QMainWindow):
         self.attachment_row.setVisible(self._attachment is not None)
         self.check_update_button.setEnabled(not busy)
         self.install_launcher_action.setEnabled(not busy and sys.platform == "linux")
+        self.restore_gui_action.setEnabled(not busy and sys.platform == "linux")
         self.download_update_button.setEnabled(not busy and self._available_release is not None)
+        self.install_update_button.setEnabled(not busy and sys.platform == "linux" and self._available_release is not None)
         if self._attachment is not None:
             name = self._attachment.name
             short_name = name if len(name) <= 28 else name[:25] + "..."
@@ -493,6 +504,51 @@ class MainWindow(QMainWindow):
             self.update_service, self, release=self._available_release, destination=path,
         ))
 
+    @Slot()
+    def _install_update(self):
+        if self._busy() or self._close_pending or self._available_release is None:
+            return
+        release = self._available_release
+        answer = QMessageBox.question(
+            self, "Install verified GUI update?",
+            f"Install HackersGhost AI GUI {release.version} for your Linux user?\n\n"
+            "The archive is signature- and checksum-verified and tested in a new folder. "
+            "The running version, CLI, API keys and encrypted memory are not replaced. "
+            "The HackersGhost AI GUI desktop shortcuts will be updated.\n\n"
+            "Close and reopen the GUI from the application menu after installation.",
+            QMessageBox.StandardButton.Yes | QMessageBox.StandardButton.No,
+            QMessageBox.StandardButton.No,
+        )
+        if answer != QMessageBox.StandardButton.Yes:
+            return
+        desktop = QStandardPaths.writableLocation(QStandardPaths.StandardLocation.DesktopLocation)
+        self.update_label.setText("Verifying and installing the GUI...")
+        self._start_update_worker(UpdateWorker(
+            self.update_service, self, release=release, install=True,
+            desktop_dir=Path(desktop) if desktop else None,
+        ))
+
+    @Slot()
+    def _restore_previous_gui(self):
+        if self._busy() or self._close_pending:
+            return
+        answer = QMessageBox.question(
+            self, "Restore previous GUI?",
+            "Restore the desktop shortcuts to the previously working GUI folder? "
+            "No application files or encrypted data will be deleted.",
+            QMessageBox.StandardButton.Yes | QMessageBox.StandardButton.No,
+            QMessageBox.StandardButton.No,
+        )
+        if answer != QMessageBox.StandardButton.Yes:
+            return
+        desktop = QStandardPaths.writableLocation(QStandardPaths.StandardLocation.DesktopLocation)
+        try:
+            restore_previous(desktop_dir=Path(desktop) if desktop else None)
+        except UpdateError as error:
+            self.update_label.setText(str(error))
+            return
+        self.update_label.setText("Previous GUI launcher restored. Close and reopen the application.")
+
     def _start_update_worker(self, worker):
         self._update_worker = worker
         worker.succeeded.connect(self._on_update_result)
@@ -503,7 +559,24 @@ class MainWindow(QMainWindow):
 
     @Slot(object)
     def _on_update_result(self, result):
-        if isinstance(result, UpdateStatus):
+        if isinstance(result, InstallResult):
+            self._available_release = None
+            if result.launcher_issue:
+                self.update_label.setText(result.launcher_issue)
+            else:
+                self.update_label.setText(f"GUI {result.version} installed. Restart from the application menu.")
+            if not self._close_pending:
+                message = QMessageBox(self)
+                message.setWindowTitle("HackersGhost AI GUI installation")
+                message.setTextFormat(Qt.TextFormat.PlainText)
+                message.setText(
+                    f"GUI {result.version} installed at:\n{result.folder}\n\n"
+                    + (result.launcher_issue or "Close this window and launch HackersGhost AI from the application menu.")
+                    + "\n\nThe older application and your encrypted memory were kept."
+                )
+                message.exec()
+                message.deleteLater()
+        elif isinstance(result, UpdateStatus):
             self._available_release = result.release
             self.update_label.setText(result.message)
         else:
