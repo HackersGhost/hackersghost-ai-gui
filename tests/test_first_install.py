@@ -135,6 +135,30 @@ class FirstInstallTests(unittest.TestCase):
         with patch.object(setup, "_existing_launcher", return_value=False), self.assertRaisesRegex(setup.InstallError, "already installed"):
             setup.install_verified(self.package, self.info, python=python, base=root)
 
+    def test_real_staged_source_preflight_and_menu_launcher(self):
+        """Exercise the real import preflight and Linux desktop writer in isolation."""
+        import sys
+
+        project = Path(__file__).resolve().parents[1]
+        files = sorted((project / "hackersghost_ai").rglob("*.py"))
+        files += [
+            project / "scripts/launch_gui.py", project / "scripts/run_gui.sh",
+            project / "requirements.txt", project / "pyproject.toml",
+        ]
+        buffer = io.BytesIO()
+        with zipfile.ZipFile(buffer, "w", zipfile.ZIP_DEFLATED) as archive:
+            for file in files:
+                archive.write(file, f"HackersGhost-AI-{self.version}/" + file.relative_to(project).as_posix())
+        package = buffer.getvalue()
+        info = dict(self.info, sha256=hashlib.sha256(package).hexdigest())
+        root = self.home / "new-user-install"
+        installed = setup.install_verified(package, info, python=Path(sys.executable), base=root)
+        menu = self.data_home / "applications" / setup.SHORTCUT
+        self.assertTrue(menu.is_file())
+        self.assertIn(str(installed), menu.read_text())
+        self.assertIn("X-HackersGhost-GUI-Version=2.1.0", menu.read_text())
+        self.assertFalse((self.home / ".local/bin/hackersghost-ai").exists())
+
     def test_existing_shortcut_is_not_replaced(self):
         menu = self.data_home / "applications"
         menu.mkdir(parents=True)
