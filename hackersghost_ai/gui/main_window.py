@@ -184,10 +184,19 @@ class MainWindow(QMainWindow):
         layout.addWidget(settings_group)
         layout.addWidget(QLabel("Updates"))
         layout.addWidget(self.update_label)
-        update_actions = QHBoxLayout()
-        update_actions.addWidget(self.check_update_button)
-        update_actions.addWidget(self.download_update_button)
-        update_actions.addWidget(self.install_update_button)
+        # The sidebar is only 280px wide including its margins. Three
+        # horizontal buttons exceed its content width on Linux themes and
+        # small displays, clipping the last (Install) button. Stack them
+        # so even a disabled Install button remains visible.
+        update_actions = QVBoxLayout()
+        update_actions.setSpacing(8)
+        for button in (
+            self.check_update_button,
+            self.download_update_button,
+            self.install_update_button,
+        ):
+            button.setSizePolicy(QSizePolicy.Policy.Expanding, QSizePolicy.Policy.Fixed)
+            update_actions.addWidget(button)
         layout.addLayout(update_actions)
         layout.addStretch(1)
 
