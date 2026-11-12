@@ -47,7 +47,7 @@ class GuiInstallerTests(unittest.TestCase):
                 "hackersghost_ai/gui/main_window.py",
                 "hackersghost_ai/__init__.py",
                 "hackersghost_ai/__main__.py",
-                "scripts/run_gui.sh", "requirements.txt", "pyproject.toml",
+                "scripts/run_gui.sh", "scripts/launch_gui.py", "requirements.txt", "pyproject.toml",
             ):
                 archive.writestr(f"HackersGhost-AI-{version}/{name}", "test fixture")
         return buffer.getvalue()
