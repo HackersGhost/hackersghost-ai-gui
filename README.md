@@ -23,6 +23,17 @@ OpenAI mode sends questions and conversation context to the OpenAI Responses API
 - Optional Linux application-menu and desktop shortcuts.
 - The same HackersGhost cybersecurity specialist policy used by the CLI.
 
+## Guided first-time installation (in development)
+
+The repository now includes a standalone, one-command Linux bootstrapper at
+`installer/install_gui.py`. It creates a private Python environment, validates
+the official signed GUI release and installs an application-menu shortcut.
+See [INSTALL_EASY.md](INSTALL_EASY.md) for installation and publisher instructions.
+
+**Release caution:** This bootstrapper must pass clean-machine testing and be
+published separately before it is advertised as a website download. It does
+not change the existing signed GUI 2.1.0 release or its update manifest.
+
 ## Install and run
 
 Requirements: a Linux desktop session, Python 3.10 or later, and an internet connection for the initial dependency installation.
