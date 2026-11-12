@@ -20,9 +20,6 @@ jobs:
       QT_QPA_PLATFORM: offscreen
       PYTHONUNBUFFERED: "1"
       PIP_NO_CACHE_DIR: "1"
-      HOME: ${{ runner.temp }}/hg-fresh-home
-      XDG_DATA_HOME: ${{ runner.temp }}/hg-fresh-home/.local/share
-      XDG_STATE_HOME: ${{ runner.temp }}/hg-fresh-home/.local/state
 
     steps:
       - name: Check out installer
@@ -39,12 +36,20 @@ jobs:
           python-version: "3.13"
 
       - name: Install official signed GUI from scratch
+        env:
+          HOME: ${{ runner.temp }}/hg-fresh-home
+          XDG_DATA_HOME: ${{ runner.temp }}/hg-fresh-home/.local/share
+          XDG_STATE_HOME: ${{ runner.temp }}/hg-fresh-home/.local/state
         run: |
           set -euo pipefail
           mkdir -p "$HOME"
           printf 'INSTALL\n' | python installer/install_gui.py
 
       - name: Verify private Python runtime, menu shortcut, and CLI isolation
+        env:
+          HOME: ${{ runner.temp }}/hg-fresh-home
+          XDG_DATA_HOME: ${{ runner.temp }}/hg-fresh-home/.local/share
+          XDG_STATE_HOME: ${{ runner.temp }}/hg-fresh-home/.local/state
         run: |
           set -euo pipefail
           "$XDG_DATA_HOME/hackersghost-ai-gui/runtime/bin/python" -I -c "import PySide6, cryptography; print('Fresh GUI runtime dependencies: OK')"
