@@ -46,7 +46,7 @@ def _exec_argument(value: str) -> str:
     return _string_value('"' + quoted + '"')
 
 
-def desktop_entry(project_dir: Path, python_executable: Path) -> str:
+def desktop_entry(project_dir: Path, python_executable: Path, *, version: str | None = None) -> str:
     if not project_dir.is_absolute() or not python_executable.is_absolute():
         raise LauncherError("The application and Python paths must be absolute.")
     if "=" in str(python_executable):
@@ -59,7 +59,7 @@ def desktop_entry(project_dir: Path, python_executable: Path) -> str:
         "TryExec=" + _string_value(str(python_executable)),
         "Path=" + _string_value(str(project_dir)),
         "Terminal=false", "Categories=Utility;", "StartupNotify=false",
-        MANAGED_KEY + "=1", "X-HackersGhost-GUI-Version=" + __version__, "",
+        MANAGED_KEY + "=1", "X-HackersGhost-GUI-Version=" + (version or __version__), "",
     ])
 
 
@@ -87,7 +87,8 @@ def _existing_entry(path: Path) -> str | None:
 
 
 def install_launchers(*, desktop_dir: Path | None, replace_existing: bool = False,
-                     project_dir: Path | None = None, python_executable: Path | None = None) -> LauncherResult:
+                     project_dir: Path | None = None, python_executable: Path | None = None,
+                     target_version: str | None = None) -> LauncherResult:
     if sys.platform != "linux":
         raise LauncherError("Desktop launcher installation is available on Linux only.")
     if hasattr(os, "geteuid") and os.geteuid() == 0:
@@ -111,7 +112,7 @@ def install_launchers(*, desktop_dir: Path | None, replace_existing: bool = Fals
             desktop_path = desktop_dir / FILENAME
     result = LauncherResult(menu_path, desktop_path)
     targets = list(dict.fromkeys(p for p in (menu_path, desktop_path) if p is not None))
-    content = desktop_entry(project, python)
+    content = desktop_entry(project, python, version=target_version)
     written = []
     try:
         previous = {path: _existing_entry(path) for path in targets}
