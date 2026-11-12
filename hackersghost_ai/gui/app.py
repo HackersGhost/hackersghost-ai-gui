@@ -53,8 +53,8 @@ def _show_startup_update_notice_when_ready(window: MainWindow) -> None:
         window,
         "HackersGhost AI update available",
         f"HackersGhost AI {release.version} is available.\n\n"
-        "Use Download in the Updates section to save the verified ZIP. "
-        "Installation remains manual; nothing is installed or executed automatically.",
+        "Choose Install in the Updates section to verify and install it for your Linux user. "
+        "Installation requires your approval; nothing is installed automatically.",
     )
 
 

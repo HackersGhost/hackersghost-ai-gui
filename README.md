@@ -1,6 +1,6 @@
 # HackersGhost AI GUI
 
-HackersGhost AI GUI 2.0.0 is the stable Linux desktop edition of HackersGhost AI for Parrot OS, Kali Linux and Debian. It is built with Python and PySide6 and is distributed as a source ZIP with a Linux launch script rather than as a standalone executable.
+HackersGhost AI GUI 2.1.0 is the stable Linux desktop edition of HackersGhost AI for Parrot OS, Kali Linux and Debian. It is built with Python and PySide6 and is distributed as a source ZIP with a Linux launch script rather than as a standalone executable.
 
 HackersGhost AI is intentionally specialized in ethical hacking, cybersecurity, Linux security and authorized security labs. It is not a general-purpose chatbot. Adjacent subjects such as Linux, Bash, Python, Git, DNS, HTTP, servers, virtualization, containers, cloud systems and networking are in scope when they are directly relevant to security, hardening, privacy, forensics or a lab.
 
@@ -18,7 +18,7 @@ OpenAI mode sends questions and conversation context to the OpenAI Responses API
 - Optional encrypted Local Memory shared with the CLI for the same Linux user.
 - Separate explicit consent for automatic conversation memory.
 - Searchable remembered conversation turns and optional pinned facts.
-- Signed GUI update checks and verified ZIP downloads.
+- Signed GUI update checks, verified ZIP downloads, and a user-approved one-click Linux GUI installer.
 - Automatic update-availability checks at startup, at most once per 24 hours, without automatic installation.
 - Optional Linux application-menu and desktop shortcuts.
 - The same HackersGhost cybersecurity specialist policy used by the CLI.
@@ -27,9 +27,9 @@ OpenAI mode sends questions and conversation context to the OpenAI Responses API
 
 Requirements: a Linux desktop session, Python 3.10 or later, and an internet connection for the initial dependency installation.
 
-1. Transfer `HackersGhost-AI-2.0.0.zip` to your Linux computer.
+1. Transfer `HackersGhost-AI-2.1.0.zip` to your Linux computer.
 2. Extract it, for example into your `Projects` folder.
-3. Open a terminal inside the extracted `HackersGhost-AI-2.0.0` folder.
+3. Open a terminal inside the extracted `HackersGhost-AI-2.1.0` folder.
 4. Install the system dependencies once:
 
 ```bash
@@ -136,7 +136,7 @@ The automatic startup check is notification-only. It does not download, install 
 
 When Offline demo mode is active, the automatic startup update check is skipped. A manual **Check** action can still contact the HackersGhost update server if you explicitly choose it.
 
-You can also press **Check** manually at any time. When a newer signed release is available, **Download** becomes available. Before saving the ZIP, the GUI validates:
+You can also press **Check** manually at any time. When a newer signed release is available, **Install** and **Download** become available. Before saving the ZIP, the GUI validates:
 
 - the Ed25519 signature;
 - product ID and manifest schema;
@@ -148,7 +148,13 @@ You can also press **Check** manually at any time. When a newer signed release i
 
 HTTPS redirects, CLI packages, expired manifests, invalid signatures, checksum mismatches and unsafe archives are rejected.
 
-Installation remains manual: extract the verified ZIP into a new folder, launch its `scripts/run_gui.sh`, verify that it works, then update the desktop launcher from the new version if desired. Keep the previous folder until the new version is confirmed working.
+For Linux users, **Install** asks permission, downloads the signed release, validates its checksum and archive, unpacks it into a new private per-user versioned directory, and checks that the new Python application imports successfully with the existing GUI Python interpreter. It then installs or replaces only the managed HackersGhost AI GUI desktop shortcuts. The running GUI, CLI, encrypted memory, API key and older application folder are not changed. Close the running GUI and reopen HackersGhost AI from your application menu to use the new release. App Menu > **Restore previous GUI launcher** retargets the desktop shortcuts to the previous application folder. If validation or the import preflight fails, installation is stopped before the desktop shortcuts change.
+
+The managed installer deliberately reuses the existing GUI Python environment. Keep the original installation folder containing its Python environment; a future release may provide a dedicated shared runtime. A release needing new Python dependencies may require a separate dependency upgrade. If a desktop shortcut cannot be updated, the release folder is preserved and the error is shown; the app will not claim the shortcut was installed.
+
+**Download** remains available for users who prefer the old manual workflow: extract the verified ZIP into a new folder, launch `scripts/run_gui.sh`, and update the desktop shortcut after checking the new version.
+
+**Upgrading from 2.0.0:** The 2.0.0 GUI can only check and download releases; it does not yet have the new Install button. Upgrade to 2.1.0 once using the verified manual ZIP method. Thereafter, newer signed GUI releases can be installed with the Install button; the CLI update command does not update the separate GUI.
 
 ## Privacy and security notes
 
@@ -158,7 +164,7 @@ The request uses `store: false`. This should not be described as a guarantee of 
 
 Offline demo mode does not make OpenAI API requests and does not load OpenAI credentials. A manual update check is separate and can contact the HackersGhost update server when explicitly requested.
 
-The application has no automatic command execution and does not execute downloaded update code. There is no automatic installer. Update metadata is signature-verified before a release is offered for download.
+The application does not execute shell commands requested by AI responses. Update installation is always user-approved and executes only a bounded Python import check for a verified publisher-signed release. There is no unattended installation. Update metadata is signature-verified before a release is offered for download or installation.
 
 ## Specialist scope
 
@@ -216,11 +222,11 @@ The GUI trusts the same pinned publisher Ed25519 public key used by the official
 
 The private signing key must remain outside the repository and outside the public download directory.
 
-Example signing command for 2.0.0:
+Example signing command for 2.1.0:
 
 ```bash
-python scripts/sign_gui_release.py /path/to/HackersGhost-AI-2.0.0.zip \
-  --version 2.0.0 \
+python scripts/sign_gui_release.py /path/to/HackersGhost-AI-2.1.0.zip \
+  --version 2.1.0 \
   --private-key /path/to/existing-offline-signing-key \
   --output /path/to/new/latest.json
 ```
@@ -228,6 +234,10 @@ python scripts/sign_gui_release.py /path/to/HackersGhost-AI-2.0.0.zip \
 The helper verifies that the private key matches the public key pinned in the GUI, validates the release ZIP and refuses to overwrite an existing output manifest.
 
 Publish the versioned ZIP first and `latest.json` last. Never upload or commit the private signing key.
+
+## Changes in 2.1.0
+
+This version adds an explicit Install button for Linux GUI updates, alongside the existing manual Download option. The updater verifies the signed manifest and ZIP, stages a new version without overwriting the running application, performs an isolated Python import preflight and updates only managed GUI shortcuts. The last working GUI folder remains available through App Menu > Restore previous GUI launcher. Automatic checks are still notification-only; installation never happens without approval. This is a per-user installer and does not require sudo or WPVibe.
 
 ## Changes in 2.0.0
 
