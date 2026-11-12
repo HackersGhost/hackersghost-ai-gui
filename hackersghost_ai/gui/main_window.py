@@ -77,7 +77,7 @@ class MainWindow(QMainWindow):
         self.backend_input.setCurrentIndex(max(0, self.backend_input.findData(settings.backend_mode)))
         self.model_input = QLineEdit(settings.model)
         self.model_input.setPlaceholderText("Model ID")
-        self.model_input.setToolTip("Use a model available to your API account. Start a new chat to change it.")
+        self.model_input.setToolTip("Default: gpt-6-luna (low cost). For deeper security and code analysis try gpt-6.1-sol. Enter a model ID your API account can access. Start a new chat to change models.")
         self.api_key_input = QLineEdit()
         self.api_key_input.setEchoMode(QLineEdit.EchoMode.Password)
         self.api_key_input.setPlaceholderText("Use existing CLI key")

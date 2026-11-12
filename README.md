@@ -1,6 +1,6 @@
 # HackersGhost AI GUI
 
-HackersGhost AI GUI 2.1.0 is the stable Linux desktop edition of HackersGhost AI for Parrot OS, Kali Linux and Debian. It is built with Python and PySide6 and is distributed as a source ZIP with a Linux launch script rather than as a standalone executable.
+HackersGhost AI GUI 2.1.1 is the stable Linux desktop edition of HackersGhost AI for Parrot OS, Kali Linux and Debian. It is built with Python and PySide6 and is distributed as a source ZIP with a Linux launch script rather than as a standalone executable.
 
 HackersGhost AI is intentionally specialized in ethical hacking, cybersecurity, Linux security and authorized security labs. It is not a general-purpose chatbot. Adjacent subjects such as Linux, Bash, Python, Git, DNS, HTTP, servers, virtualization, containers, cloud systems and networking are in scope when they are directly relevant to security, hardening, privacy, forensics or a lab.
 
@@ -23,24 +23,25 @@ OpenAI mode sends questions and conversation context to the OpenAI Responses API
 - Optional Linux application-menu and desktop shortcuts.
 - The same HackersGhost cybersecurity specialist policy used by the CLI.
 
-## Guided first-time installation (in development)
+## Guided first-time installation
 
-The repository now includes a standalone, one-command Linux bootstrapper at
-`installer/install_gui.py`. It creates a private Python environment, validates
-the official signed GUI release and installs an application-menu shortcut.
-See [INSTALL_EASY.md](INSTALL_EASY.md) for installation and publisher instructions.
+New Linux users can download the official guided installer from
+[HackersGhost AI GUI](https://hackersghost.com/hackersghost-ai-gui/).
+It creates a private Python environment, verifies the signed GUI release
+and adds an application-menu shortcut. It still requires one terminal
+command and is not yet a graphical .deb installer. See [INSTALL_EASY.md](INSTALL_EASY.md)
+for requirements and instructions.
 
-**Release caution:** This bootstrapper must pass clean-machine testing and be
-published separately before it is advertised as a website download. It does
-not change the existing signed GUI 2.1.0 release or its update manifest.
+Existing GUI 2.1.0 users should update inside the GUI once 2.1.1 is
+published; do not run the first-time installer over an existing setup.
 
 ## Install and run
 
 Requirements: a Linux desktop session, Python 3.10 or later, and an internet connection for the initial dependency installation.
 
-1. Transfer `HackersGhost-AI-2.1.0.zip` to your Linux computer.
+1. Transfer `HackersGhost-AI-2.1.1.zip` to your Linux computer.
 2. Extract it, for example into your `Projects` folder.
-3. Open a terminal inside the extracted `HackersGhost-AI-2.1.0` folder.
+3. Open a terminal inside the extracted `HackersGhost-AI-2.1.1` folder.
 4. Install the system dependencies once:
 
 ```bash
@@ -68,7 +69,7 @@ The shortcut points to the extracted application folder and its Python environme
 
 ## Connect to OpenAI
 
-Choose **OpenAI** and enter a model ID your API account can use. The initial model is taken from `HACKERSGHOST_MODEL` when that environment variable is set; otherwise the GUI currently defaults to `gpt-6-luna`.
+Choose **OpenAI** and enter a model ID your API account can use. The initial model is taken from `HACKERSGHOST_MODEL` when that environment variable is set; otherwise the GUI currently defaults to `gpt-6-luna` for lower API cost. Enter `gpt-6.1-sol` in the model field if you prefer deeper security and code analysis and your API account supports it. Model choice is always user-editable.
 
 Credential selection is:
 
@@ -233,11 +234,11 @@ The GUI trusts the same pinned publisher Ed25519 public key used by the official
 
 The private signing key must remain outside the repository and outside the public download directory.
 
-Example signing command for 2.1.0:
+Example signing command for 2.1.1:
 
 ```bash
-python scripts/sign_gui_release.py /path/to/HackersGhost-AI-2.1.0.zip \
-  --version 2.1.0 \
+python scripts/sign_gui_release.py /path/to/HackersGhost-AI-2.1.1.zip \
+  --version 2.1.1 \
   --private-key /path/to/existing-offline-signing-key \
   --output /path/to/new/latest.json
 ```
@@ -245,6 +246,15 @@ python scripts/sign_gui_release.py /path/to/HackersGhost-AI-2.1.0.zip \
 The helper verifies that the private key matches the public key pinned in the GUI, validates the release ZIP and refuses to overwrite an existing output manifest.
 
 Publish the versioned ZIP first and `latest.json` last. Never upload or commit the private signing key.
+
+## Changes in 2.1.1
+
+This bugfix release stacks the Check, Download and Install buttons vertically,
+keeping the Install action visible in the 280px sidebar on narrow Linux displays.
+The button remains disabled until a newer signed release exists.
+The model tooltip explains the lower-cost `gpt-6-luna` default and the editable
+`gpt-6.1-sol` option. API keys, memory, CLI, updater signatures and the
+first-install bootstrapper are unchanged.
 
 ## Changes in 2.1.0
 
@@ -256,4 +266,4 @@ Version 2.0.0 introduces automatic encrypted conversation memory with a separate
 
 The GUI now checks its signed update feed automatically at startup at most once per day when online mode is active. New versions are announced clearly, but downloads remain explicit and installation remains manual. Offline demo mode does not perform the automatic startup update check.
 
-Version 2.0.0 is presented as the stable channel in the interface.
+The stable channel now reports the installed GUI version.
