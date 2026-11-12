@@ -19,7 +19,7 @@ class V2StartupUpdateNoticeTests(unittest.TestCase):
             _show_startup_update_notice_when_ready(window)
         notice.assert_called_once()
         self.assertIn("2.1.0", notice.call_args.args[2])
-        self.assertIn("Installation remains manual", notice.call_args.args[2])
+        self.assertIn("Choose Install", notice.call_args.args[2])
 
     def test_no_startup_notice_without_available_release_or_visible_window(self):
         for release, visible in ((None, True), (SimpleNamespace(version="2.1.0"), False)):
