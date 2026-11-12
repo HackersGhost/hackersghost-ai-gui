@@ -40,7 +40,7 @@ class UpdateTests(unittest.TestCase):
         with zipfile.ZipFile(buffer, "w", zipfile.ZIP_DEFLATED) as archive:
             for name in ("hackersghost_ai/gui/app.py", "hackersghost_ai/gui/main_window.py",
                          "hackersghost_ai/__init__.py", "hackersghost_ai/__main__.py",
-                         "scripts/run_gui.sh", "requirements.txt", "pyproject.toml"):
+                         "scripts/run_gui.sh", "scripts/launch_gui.py", "requirements.txt", "pyproject.toml"):
                 archive.writestr("HackersGhost-AI-0.1.4/" + name, "test fixture; never executed")
             if extra:
                 with warnings.catch_warnings():
