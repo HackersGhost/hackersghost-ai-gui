@@ -127,7 +127,7 @@ def validate_package(package: bytes, release: Release) -> None:
                 files.add(relative.as_posix())
             required = {"hackersghost_ai/gui/app.py", "hackersghost_ai/gui/main_window.py",
                         "hackersghost_ai/__init__.py", "hackersghost_ai/__main__.py",
-                        "scripts/run_gui.sh", "requirements.txt", "pyproject.toml"}
+                        "scripts/run_gui.sh", "scripts/launch_gui.py", "requirements.txt", "pyproject.toml"}
             if not required <= files:
                 raise UpdateError("The download is not a complete GUI release.")
     except (zipfile.BadZipFile, RuntimeError, NotImplementedError, ValueError, OSError):
