@@ -7,16 +7,20 @@ class UpdateWorker(QThread):
     succeeded = Signal(object)
     failed = Signal(str)
 
-    def __init__(self, service, parent=None, *, release=None, destination=None):
+    def __init__(self, service, parent=None, *, release=None, destination=None, install=False, desktop_dir=None):
         super().__init__(parent)
         self.service = service
         self.release = release
         self.destination = destination
+        self.install = install
+        self.desktop_dir = desktop_dir
 
     def run(self):
         try:
             if self.release is None:
                 result = self.service.check()
+            elif self.install:
+                result = self.service.install_release(self.release, desktop_dir=self.desktop_dir)
             else:
                 result = self.service.download_release(self.release, self.destination)
             self.succeeded.emit(result)
