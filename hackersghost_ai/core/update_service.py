@@ -217,3 +217,16 @@ class UpdateService:
         finally:
             if temporary is not None:
                 temporary.unlink(missing_ok=True)
+
+    def install_release(self, release: Release, *, desktop_dir: Path | None = None):
+        """One-click, user-approved GUI installation; no edits to the running app."""
+        from hackersghost_ai.core.update_installer import install_archive
+
+        verified = verify_manifest(release.envelope, self.public_key)
+        if verified != release or version_tuple(verified.version) <= version_tuple(self.current_version):
+            raise UpdateError("Check for updates again before installing.")
+        package = self._fetch(verified.url, PACKAGE_LIMIT)
+        validate_package(package, verified)
+        # Metadata can expire while downloading. Recheck it before installation.
+        verify_manifest(verified.envelope, self.public_key)
+        return install_archive(package, verified, desktop_dir=desktop_dir)
