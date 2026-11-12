@@ -20,6 +20,8 @@ class GuiInstallerTests(unittest.TestCase):
         self.project = self.home / "Original-GUI"
         (self.project / "hackersghost_ai/gui").mkdir(parents=True)
         (self.project / "hackersghost_ai/gui/app.py").write_text("original")
+        (self.project / "scripts").mkdir(parents=True)
+        (self.project / "scripts/launch_gui.py").write_text("# original launcher")
         self.python = self.project / ".venv/bin/python"
         self.python.parent.mkdir(parents=True)
         self.python.write_text("test executable")
